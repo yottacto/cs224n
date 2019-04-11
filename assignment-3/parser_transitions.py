@@ -31,6 +31,10 @@ class PartialParse(object):
         ### Note: The root token should be represented with the string "ROOT"
         ###
 
+        self.stack = ['ROOT']
+        import copy
+        self.buffer = copy.deepcopy(sentence)
+        self.dependencies = []
 
         ### END YOUR CODE
 
@@ -50,6 +54,20 @@ class PartialParse(object):
         ###         2. Left Arc
         ###         3. Right Arc
 
+        # TODO add some assert maybe
+        if transition == 'S':
+            self.stack.append(self.buffer.pop(0))
+            return
+        top = self.stack.pop()
+        second = self.stack.pop()
+        if transition == 'LA':
+            self.dependencies.append((top, second))
+            self.stack.append(top)
+            return
+        if transition == 'RA':
+            self.dependencies.append((second, top))
+            self.stack.append(second)
+            return
 
         ### END YOUR CODE
 
@@ -100,7 +118,17 @@ def minibatch_parse(sentences, model, batch_size):
     ###             contains references to the same objects. Thus, you should NOT use the `del` operator
     ###             to remove objects from the `unfinished_parses` list. This will free the underlying memory that
     ###             is being accessed by `partial_parses` and may cause your code to crash.
+    partial_parses = [PartialParse(sentence) for sentence in sentences]
+    unfinished_parses = partial_parses[:]
+    empty = lambda p: len(p.stack) == 1 and len(p.buffer) == 0
+    while unfinished_parses:
+        mini_batch = unfinished_parses[:batch_size]
+        transitions = model.predict(mini_batch)
+        for p, t in zip(mini_batch, transitions):
+            p.parse([t])
+        unfinished_parses = [p for p in unfinished_parses if not empty(p)]
 
+    dependencies = [p.dependencies for p in partial_parses]
 
     ### END YOUR CODE
 
@@ -199,3 +227,4 @@ if __name__ == '__main__':
         test_minibatch_parse()
     else:
         raise Exception("You did not provide a valid keyword. Either provide 'part_c' or 'part_d', when executing this script")
+
