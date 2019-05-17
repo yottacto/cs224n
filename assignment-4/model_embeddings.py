@@ -11,7 +11,7 @@ Anand Dhoot <anandd@stanford.edu>
 
 import torch.nn as nn
 
-class ModelEmbeddings(nn.Module): 
+class ModelEmbeddings(nn.Module):
     """
     Class that converts input words to their embeddings.
     """
@@ -50,8 +50,18 @@ class ModelEmbeddings(nn.Module):
         ### Use the following docs to properly initialize these variables:
         ###     Embedding Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Embedding
-        
+
+        self.source = torch.nn.Embeddings(
+            num_embeddings = len(vocab.src),
+            embedding_dim  = embed_size,
+            padding_idx    = src_pad_token_idx,
+        )
+
+        self.target = torch.nn.Embeddings(
+            num_embeddings = len(vocab.tgt),
+            embedding_dim  = embed_size,
+            padding_idx    = tgt_pad_token_idx,
+        )
 
         ### END YOUR CODE
-
 
