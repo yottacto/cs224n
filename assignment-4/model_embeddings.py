@@ -51,13 +51,13 @@ class ModelEmbeddings(nn.Module):
         ###     Embedding Layer:
         ###         https://pytorch.org/docs/stable/nn.html#torch.nn.Embedding
 
-        self.source = torch.nn.Embeddings(
+        self.source = nn.Embedding(
             num_embeddings = len(vocab.src),
             embedding_dim  = embed_size,
             padding_idx    = src_pad_token_idx,
         )
 
-        self.target = torch.nn.Embeddings(
+        self.target = nn.Embedding(
             num_embeddings = len(vocab.tgt),
             embedding_dim  = embed_size,
             padding_idx    = tgt_pad_token_idx,

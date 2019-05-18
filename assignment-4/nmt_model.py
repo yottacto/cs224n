@@ -79,10 +79,35 @@ class NMT(nn.Module):
             bidirectional = True,
         )
         self.decoder = torch.nn.LSTMCell(
-            input_size = 2 * hidden_size,
+            input_size  = 2 * hidden_size,
             hidden_size = hidden_size,
         )
-        self.h_projection
+        self.h_projection = torch.nn.Linear(
+            in_features  = 2 * hidden_size,
+            out_features = hidden_size,
+            bias         = False,
+        )
+        self.c_projection = torch.nn.Linear(
+            in_features  = 2 * hidden_size,
+            out_features = hidden_size,
+            bias         = False,
+        )
+        self.att_projection = torch.nn.Linear(
+            in_features  = 2 * hidden_size,
+            out_features = hidden_size,
+            bias         = False,
+        )
+        self.combined_output_projection = torch.nn.Linear(
+            in_features  = 3 * hidden_size,
+            out_features = hidden_size,
+            bias         = False,
+        )
+        self.target_vocab_projection = torch.nn.Linear(
+            in_features  = hidden_size,
+            out_features = len(vocab.tgt),
+            bias         = False,
+        )
+        self.dropout = torch.nn.Dropout()
 
         ### END YOUR CODE
 
@@ -149,7 +174,7 @@ class NMT(nn.Module):
         ###     2. Compute `enc_hiddens`, `last_hidden`, `last_cell` by applying the encoder to `X`.
         ###         - Before you can apply the encoder, you need to apply the `pack_padded_sequence` function to X.
         ###         - After you apply the encoder, you need to apply the `pad_packed_sequence` function to enc_hiddens.
-        ###         - Note that the shape of the tensor returned by the encoder is (src_len b, h*2) and we want to
+        ###         - Note that the shape of the tensor returned by the encoder is (src_len, b, h*2) and we want to
         ###           return a tensor of shape (b, src_len, h*2) as `enc_hiddens`.
         ###     3. Compute `dec_init_state` = (init_decoder_hidden, init_decoder_cell):
         ###         - `init_decoder_hidden`:
@@ -173,6 +198,15 @@ class NMT(nn.Module):
         ###     Tensor Permute:
         ###         https://pytorch.org/docs/stable/tensors.html#torch.Tensor.permute
 
+        indices = torch.tensor(self.vocab.src.words2indices(source_padded.tolist()))
+        X = self.model_embeddings.source(indices)
+        X = nn.utils.rnn.pack_padded_sequence(X, source_lengths)
+        enc_hiddens, (last_hidden, last_cell) = self.encoder(X)
+        enc_hiddens, lens = nn.utils.rnn.pad_packed_sequence(enc_hiddens)
+        enc_hiddens = enc_hiddens.permute(1, 0, 2)
+        init_decoder_hidden = self.h_projection(torch.cat(tuple(last_hidden), dim=1))
+        init_decoder_cell   = self.c_projection(torch.cat(tuple(last_cell), dim=1))
+        dec_init_state = (init_decoder_hidden, init_decoder_cell)
 
         ### END YOUR CODE
 
